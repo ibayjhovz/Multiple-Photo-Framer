@@ -3,189 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Batch Photo Framer Studio</title>
-    <!-- JSZip handles packaging files right inside the browser framework -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <title>Automatic Photo Framer</title>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; display: flex; justify-content: center; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; max-width: 450px; }
-        h2 { margin: 0 0 8px 0; color: #1f2937; text-align: center; }
-        .subtitle { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 25px; }
-        .group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: #4b5563; }
-        input[type="file"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; background: #fafafa; }
-        button { width: 100%; padding: 14px; background-color: #2563eb; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        button:hover { background-color: #1d4ed8; }
-        button:disabled { background-color: #9ca3af; cursor: not-allowed; }
-        
-        /* Progress Bar UI Layout */
-        .progress-container { margin-top: 20px; display: none; }
-        .progress-bar-bg { width: 100%; background-color: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
-        .progress-bar-fill { width: 0%; background-color: #2563eb; height: 100%; transition: width 0.1s ease; }
-        .status-text { font-size: 14px; text-align: center; color: #4b5563; font-weight: 500; }
-
-        /* Notification & Download Link Card UI */
-        .notification-box { display: none; background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 8px; margin-top: 25px; text-align: center; }
-        .notification-title { color: #166534; font-weight: bold; font-size: 16px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .notification-message { color: #1f2937; font-size: 14px; margin-bottom: 15px; }
-        .download-link { display: inline-block; padding: 10px 20px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(16,185,129,0.2); transition: background 0.2s, transform 0.1s; }
-        .download-link:hover { background-color: #059669; transform: translateY(-1px); }
-        .download-link:active { transform: translateY(1px); }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fb;
+            color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 2px dashed #ccd1d9;
+            border-radius: 8px;
+            background: #fafbfc;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+        input[type="file"] {
+            display: block;
+            width: 100%;
+        }
+        button {
+            display: block;
+            width: 100%;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+        }
+        #status {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        .output-section {
+            margin-top: 30px;
+        }
+        .download-list {
+            list-style: none;
+            padding: 0;
+        }
+        .download-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: #edf2f7;
+            margin-bottom: 8px;
+            border-radius: 6px;
+        }
+        .download-btn {
+            background: #28a745;
+            color: white;
+            padding: 6px 12px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .download-btn:hover {
+            background: #218838;
+        }
+        #downloadAllBtn {
+            background: #28a745;
+            margin-bottom: 15px;
+        }
+        #downloadAllBtn:hover {
+            background: #218838;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Batch Photo Framer</h2>
-    <div class="subtitle">Process up to 50 photos with a single frame overlay</div>
-    
-    <div class="group">
-        <label id="photoLabel">1. Select User Photos (Max 50)</label>
-        <input type="file" id="photoInput" accept="image/*" multiple onchange="validatePhotoCount()">
-    </div>
-    
-    <div class="group">
-        <label>2. Select Frame Graphic (.png template)</label>
-        <input type="file" id="frameInput" accept="image/png">
-    </div>
-    
-    <button id="processBtn" onclick="processBatchFramer()">Generate Batch Photos</button>
-    
-    <!-- Processing Progress Area -->
-    <div class="progress-container" id="progressArea">
-        <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="barFill"></div>
-        </div>
-        <div class="status-text" id="statusLabel">Initializing execution...</div>
+<div class="container">
+    <h1>Automatic Photo Framer</h1>
+
+    <!-- Step 1: Upload Frame -->
+    <div class="input-group">
+        <label for="frameInput">1. Upload Frame (PNG with transparency preferred):</label>
+        <input type="file" id="frameInput" accept="image/*">
     </div>
 
-    <!-- Ready Notification & Interactive Download Action Trigger -->
-    <div class="notification-box" id="notificationBox">
-        <div class="notification-title">🎉 Processing Complete!</div>
-        <div class="notification-message" id="notificationMessage">Your framed photos package is built and ready for download.</div>
-        <a href="#" id="downloadBtn" class="download-link">⬇️ Download ZIP Archive</a>
+    <!-- Step 2: Upload Photos -->
+    <div class="input-group">
+        <label for="photosInput">2. Upload Photos (Multiple allowed):</label>
+        <input type="file" id="photosInput" accept="image/*" multiple>
+    </div>
+
+    <!-- Submit Button -->
+    <button id="processBtn">Process Images</button>
+    
+    <div id="status"></div>
+
+    <!-- Output Download Links -->
+    <div class="output-section" id="outputSection" style="display: none;">
+        <h3>Generated Photos</h3>
+        <button id="downloadAllBtn" style="display: none;">Download All as ZIP</button>
+        <ul id="downloadList" class="download-list"></ul>
     </div>
 </div>
 
+<!-- Canvas hidden from view, used only for processing -->
+<canvas id="canvas" style="display:none;"></canvas>
+
+<!-- Including JSZip library via CDN to allow batch downloading -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
 <script>
-let currentDownloadUrl = null;
-
-function validatePhotoCount() {
-    const input = document.getElementById('photoInput');
-    if (input.files.length > 50) {
-        alert("System limitation: Please select a maximum of 50 photos at one time.");
-        input.value = ""; 
-    }
-}
-
-async function imagePromiseFactory(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error("Failed to parse image file structural properties"));
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-async function processBatchFramer() {
-    const photoInput = document.getElementById('photoInput');
-    const frameFile = document.getElementById('frameInput').files[0];
+    const frameInput = document.getElementById('frameInput');
+    const photosInput = document.getElementById('photosInput');
     const processBtn = document.getElementById('processBtn');
-    const progressArea = document.getElementById('progressArea');
-    const barFill = document.getElementById('barFill');
-    const statusLabel = document.getElementById('statusLabel');
-    const notificationBox = document.getElementById('notificationBox');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const notificationMessage = document.getElementById('notificationMessage');
-    
-    const photosList = photoInput.files;
-    
-    if (photosList.length === 0 || !frameFile) {
-        alert("Error: You must provide at least 1 photo and 1 frame file component.");
-        return;
-    }
-    
-    // Revoke old object URL if doing a second generation to free up system device RAM
-    if (currentDownloadUrl) {
-        URL.revokeObjectURL(currentDownloadUrl);
-    }
-    
-    // Reset and show initial processing states
-    processBtn.disabled = true;
-    notificationBox.style.display = "none";
-    progressArea.style.display = "block";
-    barFill.style.width = "0%";
-    
-    try {
-        statusLabel.innerText = "Loading target frame graphic layer...";
-        const frameImg = await imagePromiseFactory(frameFile);
-        
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = frameImg.width;
-        canvas.height = frameImg.height;
-        
-        const zip = new JSZip();
-        const totalFiles = photosList.length;
-        
-        // Loop and frame images sequentially
-        for (let i = 0; i < totalFiles; i++) {
-            const currentPhotoFile = photosList[i];
-            statusLabel.innerText = `Framing image [${i + 1}/${totalFiles}]: ${currentPhotoFile.name}`;
-            
-            const photoImg = await imagePromiseFactory(currentPhotoFile);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const scale = Math.min(canvas.width / photoImg.width, canvas.height / photoImg.height);
-            const photoW = photoImg.width * scale;
-            const photoH = photoImg.height * scale;
-            const pasteX = (canvas.width - photoW) / 2;
-            const pasteY = (canvas.height - photoH) / 2;
-            
-            ctx.drawImage(photoImg, pasteX, pasteY, photoW, photoH);
-            ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
-            
-            const blobPromise = new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.90));
-            const imageBlob = await blobPromise;
-            
-            const safeName = currentPhotoFile.name.replace(/\.[^/.]+$/, "") + "_framed.jpg";
-            zip.file(safeName, imageBlob);
-            
-            const progressPercent = Math.round(((i + 1) / totalFiles) * 85);
-            barFill.style.width = `${progressPercent}%`;
-        }
-        
-        statusLabel.innerText = "Compiling compressed ZIP payload package...";
-        const zipBlob = await zip.generateAsync({ type: "blob" }, (metadata) => {
-            const compressionOffset = 85 + Math.round(metadata.percent * 0.15);
-            barFill.style.width = `${compressionOffset}%`;
-        });
-        
-        // Create the persistent link URL mapping to our newly created local file blob data
-        currentDownloadUrl = URL.createObjectURL(zipBlob);
-        
-        // Prepare download button properties 
-        downloadBtn.href = currentDownloadUrl;
-        downloadBtn.download = `framed_photos_${totalFiles}_pack.zip`;
-        
-        // Update text labels and flag notifications visibility
-        notificationMessage.innerText = `Successfully processed ${totalFiles} images! Click the link below to download your complete ZIP archive directly to your device storage safely.`;
-        progressArea.style.display = "none";
-        notificationBox.style.display = "block";
-        
-    } catch (err) {
-        console.error(err);
-        alert(`Runtime error during compilation processing steps: ${err.message}`);
-        statusLabel.innerText = "System processing failure.";
-    } finally {
-        processBtn.disabled = false;
-    }
-}
-</script>
+    const statusDiv = document.getElementById('status');
+    const outputSection = document.getElementById('outputSection');
+    const downloadList = document.getElementById('downloadList');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
 
+    let generatedImages = []; // Stores dataURLs and filenames for downloading
+
+    processBtn.addEventListener('click', async () => {
+        const frameFile = frameInput.files[0];
+        const photoFiles = photosInput.files;
+
+        if (!frameFile) {
+            alert('Please upload a frame image first.');
+            return;
+        }
+        if (photoFiles.length === 0) {
+            alert('Please upload at least one photo.');
+            return;
+        }
+
+        // Reset UI state
+        statusDiv.style.color = '#333';
+        statusDiv.innerText = "Loading frame...";
+        downloadList.innerHTML = '';
+        outputSection.style.display = 'none';
+        downloadAllBtn.style.display = 'none';
+        generatedImages = [];
+        processBtn.disabled = true;
+
+        try {
+            // 1. Load the frame to get base dimensions
+            const frameImg = await loadImage(frameFile);
+            
+            // Set canvas size strictly to match the frame size
+            canvas.width = frameImg.width;
+            canvas.height = frameImg.height;
+
+            // 2. Process each uploaded photo
+            for (let i = 0; i < photoFiles.length; i++) {
+                statusDiv.innerText = `Processing photo ${i + 1} of ${photoFiles.length}...`;
+                
+                const photoFile = photoFiles[i];
+                const photoImg = await loadImage(photoFile);
+
+                // Clear canvas for the new photo
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Calculate Aspect Ratio Fit ("Cover" style)
+                const canvasRatio = canvas.width / canvas.height;
+                const photoRatio = photoImg.width / photoImg.height;
+                
+                let renderWidth, renderHeight, xOffset, yOffset;
+
+                if (photoRatio > canvasRatio) {
+                    // Photo is wider than the frame aspect ratio
+                    renderHeight = canvas.height;
+                    renderWidth = photoImg.width * (canvas.height / photoImg.height);
+                    xOffset = (canvas.width - renderWidth) / 2;
+                    yOffset = 0;
+                } else {
+                    // Photo is taller than the frame aspect ratio
+                    renderWidth = canvas.width;
+                    renderHeight = photoImg.height * (canvas.width / photoImg.width);
+                    xOffset = 0;
+                    yOffset = (canvas.height - renderHeight) / 2;
+                }
+
+                // Draw 1: The background photo (centered and scaled)
+                ctx.drawImage(photoImg, xOffset, yOffset, renderWidth, renderHeight);
+
+                // Draw 2: Overlay the frame directly on top without altering its dimensions
+                ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+
+                // Export result
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+                const newFileName = `framed_${photoFile.name.split('.')[0]}.jpg`;
+                
+                generatedImages.push({ dataUrl, fileName: newFileName });
+
+                // Append individual download link to the list
+                const li = document.createElement('li');
+                li.className = 'download-item';
+                li.innerHTML = `
+                    <span>${newFileName}</span>
+                    <a href="${dataUrl}" download="${newFileName}" class="download-btn">Download</a>
+                `;
+                downloadList.appendChild(li);
+            }
+
+            // UI adjustments after finishing
+            statusDiv.style.color = '#28a745';
+            statusDiv.innerText = "✨ All photos processed successfully!";
+            outputSection.style.display = 'block';
+
+            if (generatedImages.length > 1) {
+                downloadAllBtn.style.display = 'block';
+            }
+
+        } catch (error) {
+            console.error(error);
+            statusDiv.style.color = '#dc3545';
+            statusDiv.innerText = "An error occurred during processing.";
+        } finally {
+            processBtn.disabled = false;
+        }
+    });
+
+    // Handle bundling everything into a single ZIP file download
+    downloadAllBtn.addEventListener('click', () => {
+        const zip = new JSZip();
+        
+        generatedImages.forEach(img => {
+            // Remove the data URL prefix header to isolate base64 data
+            const base64Data = img.dataUrl.split(',')[1];
+            zip.file(img.fileName, base64Data, { base64: true });
+        });
+
+        statusDiv.innerText = "Generating ZIP file...";
+        
+        zip.generateAsync({ type: 'blob' }).then((content) => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = "framed_photos.zip";
+            link.click();
+            statusDiv.innerText = "✨ All photos processed successfully!";
+        });
+    });
+
+    // Helper utility to convert file to Image Object via Promises
+    function loadImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+</script>
 </body>
 </html>
