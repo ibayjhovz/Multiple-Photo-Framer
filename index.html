@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Batch Photo Framer Studio</title>
+    <title>Batch Photo Framer Studio Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; display: flex; justify-content: center; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; max-width: 450px; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; max-width: 500px; margin-bottom: 30px; }
         h2 { margin: 0 0 8px 0; color: #1f2937; text-align: center; }
         .subtitle { font-size: 14px; color: #6b7280; text-align: center; margin-bottom: 25px; }
         .group { margin-bottom: 20px; }
@@ -17,26 +17,50 @@
         button:hover { background-color: #1d4ed8; }
         button:disabled { background-color: #9ca3af; cursor: not-allowed; }
         
+        /* Studio Preview Layout Grid */
+        .workspace-container { display: none; width: 100%; max-width: 900px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .workspace-title { font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 15px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px; }
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 25px; }
+        .preview-item { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+        .preview-thumbnail-container { width: 120px; height: 120px; border-radius: 4px; overflow: hidden; border: 1px solid #d1d5db; background: #e5e7eb; position: relative; margin-bottom: 8px; }
+        .preview-thumbnail { width: 100%; height: 100%; object-fit: contain; }
+        .filename-text { font-size: 11px; color: #4b5563; word-break: break-all; margin-bottom: 8px; height: 32px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .adjust-btn { padding: 6px 12px; background: #4b5563; font-size: 12px; font-weight: bold; border-radius: 4px; border: none; color: white; }
+        .adjust-btn:hover { background: #374151; }
+
+        /* Fine-Tuning Adjustment Modal Pop-up Box */
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-body { background: white; padding: 25px; border-radius: 12px; max-width: 450px; width: 90%; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .canvas-container { position: relative; width: 300px; height: 300px; margin: 0 auto 20px auto; border: 2px dashed #cbd5e1; background: #f1f5f9; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .modal-canvas { max-width: 100%; max-height: 100%; }
+        .control-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+        .control-btn { padding: 8px; background: #e2e8f0; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; color: #334155; }
+        .control-btn:hover { background: #cbd5e1; }
+        .action-row { display: flex; gap: 10px; }
+        .save-btn { background: #10b981; }
+        .save-btn:hover { background: #059669; }
+        .cancel-btn { background: #ef4444; }
+        .cancel-btn:hover { background: #dc2626; }
+
         /* Progress Bar UI Layout */
         .progress-container { margin-top: 20px; display: none; }
         .progress-bar-bg { width: 100%; background-color: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
         .progress-bar-fill { width: 0%; background-color: #2563eb; height: 100%; transition: width 0.1s ease; }
         .status-text { font-size: 14px; text-align: center; color: #4b5563; font-weight: 500; }
 
-        /* Notification & Download Link Card UI */
+        /* Notification Box */
         .notification-box { display: none; background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 8px; margin-top: 25px; text-align: center; }
         .notification-title { color: #166534; font-weight: bold; font-size: 16px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 6px; }
         .notification-message { color: #1f2937; font-size: 14px; margin-bottom: 15px; }
-        .download-link { display: inline-block; padding: 10px 20px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(16,185,129,0.2); transition: background 0.2s, transform 0.1s; }
-        .download-link:hover { background-color: #059669; transform: translateY(-1px); }
-        .download-link:active { transform: translateY(1px); }
+        .download-link { display: inline-block; padding: 10px 20px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(16,185,129,0.2); transition: background 0.2s; }
+        .download-link:hover { background-color: #059669; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>Batch Photo Framer</h2>
-    <div class="subtitle">Process up to 50 photos with a single frame overlay</div>
+    <div class="subtitle">Process up to 50 photos with custom position adjustments</div>
     
     <div class="group">
         <label id="photoLabel">1. Select User Photos (Max 50)</label>
@@ -48,24 +72,63 @@
         <input type="file" id="frameInput" accept="image/png">
     </div>
     
-    <button id="processBtn" onclick="processBatchFramer()">Generate Batch Photos</button>
+    <button id="processBtn" onclick="loadPhotosToWorkspace()">Load Images Into Workspace</button>
+</div>
+
+<div class="workspace-container" id="workspaceContainer">
+    <div class="workspace-title">🛠️ Studio Preview & Tuning Desk</div>
+    <div class="preview-grid" id="previewGrid"></div>
     
+    <button id="compileBtn" style="background-color: #10b981;" onclick="compileFinalZip()">Package & Export Framed ZIP</button>
+
     <div class="progress-container" id="progressArea">
         <div class="progress-bar-bg">
             <div class="progress-bar-fill" id="barFill"></div>
         </div>
-        <div class="status-text" id="statusLabel">Initializing execution...</div>
+        <div class="status-text" id="statusLabel">Compiling...</div>
     </div>
 
     <div class="notification-box" id="notificationBox">
-        <div class="notification-title">🎉 Processing Complete!</div>
-        <div class="notification-message" id="notificationMessage">Your framed photos package is built and ready for download.</div>
+        <div class="notification-title">🎉 Package Compiled!</div>
+        <div class="notification-message" id="notificationMessage">Your manually adjusted archive is ready.</div>
         <a href="#" id="downloadBtn" class="download-link">⬇️ Download ZIP Archive</a>
+    </div>
+</div>
+
+<div class="modal-overlay" id="adjustModal">
+    <div class="modal-body">
+        <h3 style="margin-top: 0; color: #1f2937;">Adjust Photo Position</h3>
+        <div class="canvas-container">
+            <canvas id="modalCanvas" class="modal-canvas"></canvas>
+        </div>
+        
+        <div class="control-panel">
+            <button class="control-btn" onclick="adjustPosition('y', -10)">🔼 Up</button>
+            <button class="control-btn" onclick="adjustPosition('scale', 0.05)">🔍 Zoom In</button>
+            <button class="control-btn" onclick="adjustPosition('y', 10)">🔽 Down</button>
+            <button class="control-btn" onclick="adjustPosition('x', -10)">◀️ Left</button>
+            <button class="control-btn" onclick="adjustPosition('reset', 0)">🔄 Reset</button>
+            <button class="control-btn" onclick="adjustPosition('x', 10)">▶️ Right</button>
+            <button class="control-btn" style="grid-column: span 3" onclick="adjustPosition('scale', -0.05)">🔎 Zoom Out</button>
+        </div>
+        
+        <div class="action-row">
+            <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+            <button class="save-btn" onclick="saveAdjustments()">Save Changes</button>
+        </div>
     </div>
 </div>
 
 <script>
 let currentDownloadUrl = null;
+let frameImageGlobal = null;
+let photoWorkspaceArray = []; // Stores active references to elements
+let activeIndex = null; // Track photo selected for adjusting
+
+// Temporary manipulation objects
+let tempScale = 1.0;
+let tempXOffset = 0;
+let tempYOffset = 0;
 
 function validatePhotoCount() {
     const input = document.getElementById('photoInput');
@@ -81,105 +144,215 @@ async function imagePromiseFactory(file) {
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error("Failed to parse image file structural properties"));
+            img.onerror = () => reject(new Error("Failed to parse image parameters"));
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
     });
 }
 
-async function processBatchFramer() {
+async function loadPhotosToWorkspace() {
     const photoInput = document.getElementById('photoInput');
     const frameFile = document.getElementById('frameInput').files[0];
-    const processBtn = document.getElementById('processBtn');
+    const previewGrid = document.getElementById('previewGrid');
+    const workspaceContainer = document.getElementById('workspaceContainer');
+    
+    if (photoInput.files.length === 0 || !frameFile) {
+        alert("Error: You must provide at least 1 photo and 1 frame asset template.");
+        return;
+    }
+
+    document.getElementById('notificationBox').style.display = "none";
+    previewGrid.innerHTML = "";
+    photoWorkspaceArray = [];
+    
+    try {
+        frameImageGlobal = await imagePromiseFactory(frameFile);
+        const files = photoInput.files;
+        
+        for(let i=0; i<files.length; i++) {
+            const imgElement = await imagePromiseFactory(files[i]);
+            
+            // Baseline Cover Calculation values
+            const baseScale = Math.max(frameImageGlobal.width / imgElement.width, frameImageGlobal.height / imgElement.height);
+            
+            // Add custom tracking properties directly onto tracking item
+            photoWorkspaceArray.push({
+                img: imgElement,
+                name: files[i].name,
+                scale: baseScale,
+                initialScale: baseScale,
+                xOffset: 0,
+                yOffset: 0,
+                blobUrl: null
+            });
+            
+            // Render workspace item block
+            const gridItem = document.createElement('div');
+            gridItem.className = "preview-item";
+            gridItem.id = `work-item-${i}`;
+            gridItem.innerHTML = `
+                <div class="preview-thumbnail-container">
+                    <canvas id="thumb-canvas-${i}" width="150" height="150" class="preview-thumbnail"></canvas>
+                </div>
+                <div class="filename-text">${files[i].name}</div>
+                <button class="adjust-btn" onclick="openAdjustmentModal(${i})">⚙️ Adjust</button>
+            `;
+            previewGrid.appendChild(gridItem);
+            renderThumbnail(i);
+        }
+        
+        workspaceContainer.style.display = "block";
+        workspaceContainer.scrollIntoView({ behavior: 'smooth' });
+    } catch(err) {
+        alert("Error loading framework components: " + err.message);
+    }
+}
+
+function renderThumbnail(index) {
+    const item = photoWorkspaceArray[index];
+    const canvas = document.getElementById(`thumb-canvas-${index}`);
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = frameImageGlobal.width;
+    canvas.height = frameImageGlobal.height;
+    
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    
+    // Draw using custom adjustments
+    const photoW = item.img.width * item.scale;
+    const photoH = item.img.height * item.scale;
+    const pasteX = ((canvas.width - photoW) / 2) + item.xOffset;
+    const pasteY = ((canvas.height - photoH) / 2) + item.yOffset;
+    
+    ctx.drawImage(item.img, pasteX, pasteY, photoW, photoH);
+    ctx.drawImage(frameImageGlobal, 0, 0, canvas.width, canvas.height);
+}
+
+function openAdjustmentModal(index) {
+    activeIndex = index;
+    const item = photoWorkspaceArray[index];
+    
+    // Set temporary trackers matching target configuration properties
+    tempScale = item.scale;
+    tempXOffset = item.xOffset;
+    tempYOffset = item.yOffset;
+    
+    document.getElementById('adjustModal').style.display = "flex";
+    drawModalCanvas();
+}
+
+function drawModalCanvas() {
+    const item = photoWorkspaceArray[activeIndex];
+    const canvas = document.getElementById('modalCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = frameImageGlobal.width;
+    canvas.height = frameImageGlobal.height;
+    
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    
+    const photoW = item.img.width * tempScale;
+    const photoH = item.img.height * tempScale;
+    const pasteX = ((canvas.width - photoW) / 2) + tempXOffset;
+    const pasteY = ((canvas.height - photoH) / 2) + tempYOffset;
+    
+    ctx.drawImage(item.img, pasteX, pasteY, photoW, photoH);
+    ctx.drawImage(frameImageGlobal, 0, 0, canvas.width, canvas.height);
+}
+
+function adjustPosition(axis, delta) {
+    const item = photoWorkspaceArray[activeIndex];
+    if (axis === 'x') tempXOffset += delta;
+    if (axis === 'y') tempYOffset += delta;
+    if (axis === 'scale') tempScale = Math.max(0.05, tempScale + delta);
+    if (axis === 'reset') {
+        tempScale = item.initialScale;
+        tempXOffset = 0;
+        tempYOffset = 0;
+    }
+    drawModalCanvas();
+}
+
+function closeModal() {
+    document.getElementById('adjustModal').style.display = "none";
+    activeIndex = null;
+}
+
+function saveAdjustments() {
+    const item = photoWorkspaceArray[activeIndex];
+    item.scale = tempScale;
+    item.xOffset = tempXOffset;
+    item.yOffset = tempYOffset;
+    
+    renderThumbnail(activeIndex);
+    closeModal();
+}
+
+async function compileFinalZip() {
     const progressArea = document.getElementById('progressArea');
     const barFill = document.getElementById('barFill');
     const statusLabel = document.getElementById('statusLabel');
     const notificationBox = document.getElementById('notificationBox');
     const downloadBtn = document.getElementById('downloadBtn');
-    const notificationMessage = document.getElementById('notificationMessage');
     
-    const photosList = photoInput.files;
-    
-    if (photosList.length === 0 || !frameFile) {
-        alert("Error: You must provide at least 1 photo and 1 frame file component.");
-        return;
-    }
+    if(photoWorkspaceArray.length === 0) return;
     
     if (currentDownloadUrl) {
         URL.revokeObjectURL(currentDownloadUrl);
     }
     
-    processBtn.disabled = true;
     notificationBox.style.display = "none";
     progressArea.style.display = "block";
     barFill.style.width = "0%";
     
-    try {
-        statusLabel.innerText = "Loading target frame graphic layer...";
-        const frameImg = await imagePromiseFactory(frameFile);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = frameImageGlobal.width;
+    canvas.height = frameImageGlobal.height;
+    
+    const zip = new JSZip();
+    const totalFiles = photoWorkspaceArray.length;
+    
+    for(let i=0; i<totalFiles; i++) {
+        statusLabel.innerText = `Baking and compressing workspace file [${i+1}/${totalFiles}]`;
+        const item = photoWorkspaceArray[i];
         
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Canvas aspect ratio and size are locked 1:1 to the template frame
-        canvas.width = frameImg.width;
-        canvas.height = frameImg.height;
+        const photoW = item.img.width * item.scale;
+        const photoH = item.img.height * item.scale;
+        const pasteX = ((canvas.width - photoW) / 2) + item.xOffset;
+        const pasteY = ((canvas.height - photoH) / 2) + item.yOffset;
         
-        const zip = new JSZip();
-        const totalFiles = photosList.length;
+        ctx.drawImage(item.img, pasteX, pasteY, photoW, photoH);
+        ctx.drawImage(frameImageGlobal, 0, 0, canvas.width, canvas.height);
         
-        for (let i = 0; i < totalFiles; i++) {
-            const currentPhotoFile = photosList[i];
-            statusLabel.innerText = `Framing image [${i + 1}/${totalFiles}]: ${currentPhotoFile.name}`;
-            
-            const photoImg = await imagePromiseFactory(currentPhotoFile);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // MATH UPDATE: Scale up using Math.max to guarantee edge-to-edge filling
-            const scale = Math.max(canvas.width / photoImg.width, canvas.height / photoImg.height);
-            const photoW = photoImg.width * scale;
-            const photoH = photoImg.height * scale;
-            
-            // Center the cropped photo automatically within the frame dimensions
-            const pasteX = (canvas.width - photoW) / 2;
-            const pasteY = (canvas.height - photoH) / 2;
-            
-            // Render photo background first, then seal it cleanly with the frame asset overlay
-            ctx.drawImage(photoImg, pasteX, pasteY, photoW, photoH);
-            ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
-            
-            const blobPromise = new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.90));
-            const imageBlob = await blobPromise;
-            
-            const safeName = currentPhotoFile.name.replace(/\.[^/.]+$/, "") + "_framed.jpg";
-            zip.file(safeName, imageBlob);
-            
-            const progressPercent = Math.round(((i + 1) / totalFiles) * 85);
-            barFill.style.width = `${progressPercent}%`;
-        }
+        const blobPromise = new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.90));
+        const imageBlob = await blobPromise;
         
-        statusLabel.innerText = "Compiling compressed ZIP payload package... ";
-        const zipBlob = await zip.generateAsync({ type: "blob" }, (metadata) => {
-            const compressionOffset = 85 + Math.round(metadata.percent * 0.15);
-            barFill.style.width = `${compressionOffset}%`;
-        });
+        const safeName = item.name.replace(/\.[^/.]+$/, "") + "_framed.jpg";
+        zip.file(safeName, imageBlob);
         
-        currentDownloadUrl = URL.createObjectURL(zipBlob);
-        downloadBtn.href = currentDownloadUrl;
-        downloadBtn.download = `framed_photos_${totalFiles}_pack.zip`;
+        const progressPercent = Math.round(((i + 1) / totalFiles) * 85);
+        barFill.style.width = `${progressPercent}%`;
         
-        notificationMessage.innerText = `Successfully processed ${totalFiles} images! Click the link below to download your complete ZIP archive directly to your device storage safely.`;
-        progressArea.style.display = "none";
-        notificationBox.style.display = "block";
-        
-    } catch (err) {
-        console.error(err);
-        alert(`Runtime error during compilation processing steps: ${err.message}`);
-        statusLabel.innerText = "System processing failure.";
-    } finally {
-        processBtn.disabled = false;
+        // Minor micro-delay to maintain thread loop stability
+        await new Promise(res => setTimeout(res, 5));
     }
+    
+    statusLabel.innerText = "Packing structural archive ZIP...";
+    const zipBlob = await zip.generateAsync({ type: "blob" }, (metadata) => {
+        const compressionOffset = 85 + Math.round(metadata.percent * 0.15);
+        barFill.style.width = `${compressionOffset}%`;
+    });
+    
+    currentDownloadUrl = URL.createObjectURL(zipBlob);
+    downloadBtn.href = currentDownloadUrl;
+    downloadBtn.download = `studio_framed_pack_${totalFiles}.zip`;
+    
+    progressArea.style.display = "none";
+    notificationBox.style.display = "block";
 }
 </script>
 
