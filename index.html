@@ -122,7 +122,7 @@ async function processBatchFramer() {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // Base canvas template size is strictly locked to the aspect/dimensions of the frame
+        // Canvas aspect ratio and size are locked 1:1 to the template frame
         canvas.width = frameImg.width;
         canvas.height = frameImg.height;
         
@@ -136,17 +136,16 @@ async function processBatchFramer() {
             const photoImg = await imagePromiseFactory(currentPhotoFile);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // --- FIX: "COVER" CALCULATION TO REMOVE BLACK SPACES ---
-            // Determine scale to completely cover the canvas (using Math.max instead of Math.min)
+            // MATH UPDATE: Scale up using Math.max to guarantee edge-to-edge filling
             const scale = Math.max(canvas.width / photoImg.width, canvas.height / photoImg.height);
             const photoW = photoImg.width * scale;
             const photoH = photoImg.height * scale;
             
-            // Center the image within the frame boundaries
+            // Center the cropped photo automatically within the frame dimensions
             const pasteX = (canvas.width - photoW) / 2;
             const pasteY = (canvas.height - photoH) / 2;
             
-            // Draw photo zoomed/cropped, then overlay the frame perfectly
+            // Render photo background first, then seal it cleanly with the frame asset overlay
             ctx.drawImage(photoImg, pasteX, pasteY, photoW, photoH);
             ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
             
@@ -160,7 +159,7 @@ async function processBatchFramer() {
             barFill.style.width = `${progressPercent}%`;
         }
         
-        statusLabel.innerText = "Compiling compressed ZIP payload package...";
+        statusLabel.innerText = "Compiling compressed ZIP payload package... ";
         const zipBlob = await zip.generateAsync({ type: "blob" }, (metadata) => {
             const compressionOffset = 85 + Math.round(metadata.percent * 0.15);
             barFill.style.width = `${compressionOffset}%`;
