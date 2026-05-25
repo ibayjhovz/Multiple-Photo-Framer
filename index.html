@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OSC Photo Framing System</title>
+    <title>Batch Photo Framer Studio Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; display: flex; flex-direction: column; align-items: center; }
@@ -65,11 +65,11 @@
 <body>
 
 <div class="card">
-    <h2>OSC Photo Framer</h2>
-    <div class="subtitle">Process up to 50 photos with custom position adjustments</div>
+    <h2>Batch Photo Framer</h2>
+    <div class="subtitle">Process up to 100 photos with custom position adjustments</div>
     
     <div class="group">
-        <label id="photoLabel">1. Select User Photos (Max 50)</label>
+        <label id="photoLabel">1. Select User Photos (Max 100)</label>
         <input type="file" id="photoInput" accept="image/*" multiple onchange="validatePhotoCount()">
     </div>
     
@@ -138,10 +138,11 @@ let tempScale = 1.0;
 let tempXOffset = 0;
 let tempYOffset = 0;
 
+// Logic Fix: Maximum file verification limit bumped cleanly to 100
 function validatePhotoCount() {
     const input = document.getElementById('photoInput');
-    if (input.files.length > 50) {
-        alert("System limitation: Please select a maximum of 50 photos at one time.");
+    if (input.files.length > 100) {
+        alert("System limitation: Please select a maximum of 100 photos at one time.");
         input.value = ""; 
     }
 }
@@ -292,24 +293,19 @@ function saveAdjustments() {
     closeModal();
 }
 
-// --- NEW FUNCTION: FULL RUNTIME CLEAN RESET ---
 function resetStudioWorkspace() {
-    // Revoke binary pointers to free up RAM memory
     if (currentDownloadUrl) {
         URL.revokeObjectURL(currentDownloadUrl);
         currentDownloadUrl = null;
     }
     
-    // Clear Input Elements
     document.getElementById('photoInput').value = "";
     document.getElementById('frameInput').value = "";
     
-    // Reset Data Arrays
     photoWorkspaceArray = [];
     frameImageGlobal = null;
     activeIndex = null;
     
-    // Wipe and Hide the Grid UI Elements
     document.getElementById('previewGrid').innerHTML = "";
     document.getElementById('workspaceContainer').style.display = "none";
     document.getElementById('notificationBox').style.display = "none";
