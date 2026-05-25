@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Batch Photo Framer Studio</title>
-    <!-- JSZip handles packaging files right inside the browser framework -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px; display: flex; justify-content: center; }
@@ -51,7 +50,6 @@
     
     <button id="processBtn" onclick="processBatchFramer()">Generate Batch Photos</button>
     
-    <!-- Processing Progress Area -->
     <div class="progress-container" id="progressArea">
         <div class="progress-bar-bg">
             <div class="progress-bar-fill" id="barFill"></div>
@@ -59,7 +57,6 @@
         <div class="status-text" id="statusLabel">Initializing execution...</div>
     </div>
 
-    <!-- Ready Notification & Interactive Download Action Trigger -->
     <div class="notification-box" id="notificationBox">
         <div class="notification-title">🎉 Processing Complete!</div>
         <div class="notification-message" id="notificationMessage">Your framed photos package is built and ready for download.</div>
@@ -109,12 +106,10 @@ async function processBatchFramer() {
         return;
     }
     
-    // Revoke old object URL if doing a second generation to free up system device RAM
     if (currentDownloadUrl) {
         URL.revokeObjectURL(currentDownloadUrl);
     }
     
-    // Reset and show initial processing states
     processBtn.disabled = true;
     notificationBox.style.display = "none";
     progressArea.style.display = "block";
@@ -126,13 +121,14 @@ async function processBatchFramer() {
         
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
+        
+        // Base canvas template size is strictly locked to the aspect/dimensions of the frame
         canvas.width = frameImg.width;
         canvas.height = frameImg.height;
         
         const zip = new JSZip();
         const totalFiles = photosList.length;
         
-        // Loop and frame images sequentially
         for (let i = 0; i < totalFiles; i++) {
             const currentPhotoFile = photosList[i];
             statusLabel.innerText = `Framing image [${i + 1}/${totalFiles}]: ${currentPhotoFile.name}`;
@@ -140,12 +136,17 @@ async function processBatchFramer() {
             const photoImg = await imagePromiseFactory(currentPhotoFile);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            const scale = Math.min(canvas.width / photoImg.width, canvas.height / photoImg.height);
+            // --- FIX: "COVER" CALCULATION TO REMOVE BLACK SPACES ---
+            // Determine scale to completely cover the canvas (using Math.max instead of Math.min)
+            const scale = Math.max(canvas.width / photoImg.width, canvas.height / photoImg.height);
             const photoW = photoImg.width * scale;
             const photoH = photoImg.height * scale;
+            
+            // Center the image within the frame boundaries
             const pasteX = (canvas.width - photoW) / 2;
             const pasteY = (canvas.height - photoH) / 2;
             
+            // Draw photo zoomed/cropped, then overlay the frame perfectly
             ctx.drawImage(photoImg, pasteX, pasteY, photoW, photoH);
             ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
             
@@ -165,14 +166,10 @@ async function processBatchFramer() {
             barFill.style.width = `${compressionOffset}%`;
         });
         
-        // Create the persistent link URL mapping to our newly created local file blob data
         currentDownloadUrl = URL.createObjectURL(zipBlob);
-        
-        // Prepare download button properties 
         downloadBtn.href = currentDownloadUrl;
         downloadBtn.download = `framed_photos_${totalFiles}_pack.zip`;
         
-        // Update text labels and flag notifications visibility
         notificationMessage.innerText = `Successfully processed ${totalFiles} images! Click the link below to download your complete ZIP archive directly to your device storage safely.`;
         progressArea.style.display = "none";
         notificationBox.style.display = "block";
